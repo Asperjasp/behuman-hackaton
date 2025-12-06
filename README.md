@@ -1,0 +1,751 @@
+# 🎵 BeHuman - Asesoramiento Psicocultural con Música
+
+Sistema de recomendación musical terapéutica que combina asesoramiento psicológico con personalización cultural y gustos musicales del usuario.
+
+## 🎯 Concepto
+
+BeHuman es un agente de IA que brinda apoyo emocional personalizado a través de la música, considerando:
+
+1. **Situación Psicológica**: Identificación del problema (ruptura, duelo, estrés financiero, etc.)
+2. **Estilo de Afrontamiento**: Cómo prefiere el usuario lidiar con la situación
+3. **Contexto Cultural**: Temporada (Navidad, etc.), región (Colombia, México, etc.)
+4. **Gustos Personales**: Géneros y artistas favoritos del usuario
+
+## 📁 Estructura del Proyecto
+
+```
+behuman-hackaton/
+├── src/
+│   ├── spotify/                    # Integración con Spotify API
+│   │   ├── auth/                   # Autenticación OAuth 2.0
+│   │   │   ├── SpotifyAuthService.cs
+│   │   │   ├── TokenManager.cs
+│   │   │   └── OAuthCallbackHandler.cs
+│   │   ├── client/                 # Cliente API Spotify
+│   │   │   ├── SpotifyApiClient.cs
+│   │   │   ├── UserProfileService.cs
+│   │   │   └── PlaylistService.cs
+│   │   └── models/                 # Modelos de datos Spotify
+│   │       ├── SpotifyUser.cs
+│   │       ├── TopArtists.cs
+│   │       ├── TopTracks.cs
+│   │       └── UserPreferences.cs
+│   │
+│   ├── playlists/                  # Sistema de Playlists Curadas
+│   │   ├── catalog/                # Catálogo de playlists por situación
+│   │   │   ├── PlaylistCatalog.cs
+│   │   │   ├── SituationCategory.cs
+│   │   │   └── CopingStyleMapper.cs
+│   │   ├── cultural/               # Contexto cultural
+│   │   │   ├── CulturalContextService.cs
+│   │   │   ├── SeasonalDetector.cs
+│   │   │   └── RegionalPreferences.cs
+│   │   └── models/                 # Modelos de playlists
+│   │       ├── CuratedPlaylist.cs
+│   │       ├── MusicRecommendation.cs
+│   │       └── EmotionalTag.cs
+│   │
+│   ├── psychology/                 # Motor de Análisis Psicológico
+│   │   ├── analysis/               # Análisis de situación
+│   │   │   ├── SituationDetector.cs
+│   │   │   ├── EmotionAnalyzer.cs
+│   │   │   └── CopingStyleIdentifier.cs
+│   │   ├── recommendations/        # Sistema de recomendaciones
+│   │   │   ├── RecommendationEngine.cs
+│   │   │   ├── PersonalizationService.cs
+│   │   │   └── HybridMatcher.cs
+│   │   └── models/                 # Modelos psicológicos
+│   │       ├── PsychologicalSituation.cs
+│   │       ├── CopingStyle.cs
+│   │       └── UserEmotionalProfile.cs
+│   │
+│   ├── ai/                         # Integración con IA Generativa
+│   │   ├── agents/                 # Agentes de conversación
+│   │   │   ├── PsychoCulturalAgent.cs
+│   │   │   └── ConversationManager.cs
+│   │   ├── prompts/                # Templates de prompts
+│   │   │   ├── SituationDetectionPrompt.cs
+│   │   │   └── RecommendationPrompt.cs
+│   │   └── models/
+│   │       └── AgentResponse.cs
+│   │
+│   └── api/                        # API REST
+│       ├── Controllers/
+│       │   ├── AuthController.cs
+│       │   ├── RecommendationController.cs
+│       │   └── UserPreferencesController.cs
+│       └── DTOs/
+│           ├── RecommendationRequest.cs
+│           └── RecommendationResponse.cs
+│
+├── data/                           # Datos y Configuración
+│   ├── playlists/                  # Playlists curadas (JSON/YAML)
+│   │   ├── situations/             # Por situación
+│   │   │   ├── tusa-ruptura.json
+│   │   │   ├── duelo-familiar.json
+│   │   │   ├── estres-financiero.json
+│   │   │   └── ansiedad-general.json
+│   │   ├── coping-styles/          # Por estilo de afrontamiento
+│   │   │   ├── extrovertido-despecho.json
+│   │   │   ├── introvertido-nostalgia.json
+│   │   │   └── reflexivo-sanacion.json
+│   │   └── cultural/               # Por contexto cultural
+│   │       ├── colombia-navidad.json
+│   │       ├── mexico-dia-muertos.json
+│   │       └── latam-general.json
+│   └── mappings/                   # Mapeos de géneros y emociones
+│       ├── genre-emotion-map.json
+│       └── cultural-genre-map.json
+│
+├── tests/                          # Tests
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+│
+├── docs/                           # Documentación adicional
+│   ├── spotify-integration.md
+│   ├── playlist-curation-guide.md
+│   └── psychological-framework.md
+│
+├── .env.example                    # Variables de entorno ejemplo
+├── appsettings.json
+└── BeHuman.sln
+```
+
+---
+
+## 🔐 Integración con Spotify (Punto 2: Gustos Personales)
+
+### Flujo de Autenticación OAuth 2.0
+
+```
+┌─────────────┐     1. Click "Conectar Spotify"      ┌──────────────┐
+│   Usuario   │ ─────────────────────────────────────▶│   BeHuman    │
+└─────────────┘                                       └──────────────┘
+       │                                                      │
+       │  2. Redirect a Spotify                               │
+       ▼                                                      │
+┌─────────────────┐                                          │
+│ Spotify Login   │                                          │
+│ + Autorización  │                                          │
+└─────────────────┘                                          │
+       │                                                      │
+       │  3. Callback con código                              │
+       ▼                                                      │
+┌─────────────────┐     4. Intercambio por tokens    ┌──────────────┐
+│ Redirect URI    │ ─────────────────────────────────▶│ Spotify API  │
+└─────────────────┘                                   └──────────────┘
+       │                                                      │
+       │  5. Access Token + Refresh Token                     │
+       ▼                                                      │
+┌─────────────────┐                                          │
+│ BeHuman guarda  │◀─────────────────────────────────────────┘
+│ tokens seguros  │
+└─────────────────┘
+```
+
+### Scopes (Permisos) Requeridos
+
+| Scope | Descripción | Uso en BeHuman |
+|-------|-------------|----------------|
+| `user-top-read` | Top artistas y canciones | Conocer géneros favoritos |
+| `user-read-recently-played` | Historial reciente | Estado emocional actual |
+| `playlist-read-private` | Playlists privadas | Analizar categorías personales |
+| `user-read-private` | Perfil básico | País/región del usuario |
+
+### Configuración Spotify Developer
+
+1. Crear app en [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Configurar Redirect URI: `https://tudominio.com/api/auth/spotify/callback`
+3. Obtener `Client ID` y `Client Secret`
+4. Configurar en `.env`:
+
+```env
+SPOTIFY_CLIENT_ID=tu_client_id
+SPOTIFY_CLIENT_SECRET=tu_client_secret
+SPOTIFY_REDIRECT_URI=https://tudominio.com/api/auth/spotify/callback
+```
+
+---
+
+## 🎭 Sistema de Playlists Curadas (Punto 1: Asesoramiento Base)
+
+### Categorías de Situaciones Psicológicas
+
+```json
+{
+  "situaciones": [
+    {
+      "id": "tusa-ruptura",
+      "nombre": "Ruptura Amorosa (Tusa)",
+      "descripcion": "Fin de relación sentimental",
+      "estilosAfrontamiento": [
+        {
+          "id": "extrovertido-despecho",
+          "nombre": "Despecho Activo",
+          "descripcion": "Quiere sentirse fuerte y superar",
+          "indicadores": ["desahogarme", "superarlo", "olvidarlo", "fuerte"],
+          "generos": ["reggaeton", "salsa", "pop-latino"],
+          "ejemplos": ["Tusa - Karol G", "Corazón Sin Cara"]
+        },
+        {
+          "id": "introvertido-nostalgia", 
+          "nombre": "Nostalgia Reflexiva",
+          "descripcion": "Procesar el duelo con tristeza",
+          "indicadores": ["extraño", "recuerdos", "duele", "llorar"],
+          "generos": ["balada", "rock-español", "bolero"],
+          "ejemplos": ["De Música Ligera - Soda Stereo", "Hasta Que Te Conocí"]
+        },
+        {
+          "id": "cultural-vallenato",
+          "nombre": "Despecho Vallenato (Colombia)",
+          "descripcion": "Afrontamiento cultural colombiano",
+          "indicadores": ["colombiano", "vallenato", "parranda"],
+          "generos": ["vallenato", "cumbia"],
+          "ejemplos": ["Volver - Diomedes Díaz", "La Bilirrubina"]
+        }
+      ]
+    },
+    {
+      "id": "duelo-familiar",
+      "nombre": "Muerte de Familiar",
+      "descripcion": "Pérdida de un ser querido",
+      "estilosAfrontamiento": [
+        {
+          "id": "homenaje-celebracion",
+          "nombre": "Celebrar su Vida",
+          "indicadores": ["recordar", "homenaje", "celebrar"],
+          "ejemplos": ["In Loving Memory - Alter Bridge", "See You Again"]
+        },
+        {
+          "id": "procesamiento-tristeza",
+          "nombre": "Procesar el Dolor",
+          "indicadores": ["duele", "falta", "vacío"],
+          "ejemplos": ["Tears in Heaven - Eric Clapton"]
+        }
+      ]
+    },
+    {
+      "id": "estres-financiero",
+      "nombre": "Problemas Económicos",
+      "descripcion": "Dificultades financieras y estrés por dinero",
+      "estilosAfrontamiento": [
+        {
+          "id": "humor-realista",
+          "nombre": "Humor y Realismo",
+          "indicadores": ["reírme", "realidad", "todos pasamos"],
+          "generos": ["cumbia", "reggaeton", "regional-mexicano"],
+          "ejemplos": ["No Hay Pesos - Grupo Cañaveral", "El Listón de tu Pelo"]
+        },
+        {
+          "id": "motivacional",
+          "nombre": "Motivación para Salir Adelante",
+          "indicadores": ["salir adelante", "esfuerzo", "lograr"],
+          "generos": ["hip-hop-latino", "rock"],
+          "ejemplos": ["Vivir Mi Vida - Marc Anthony"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Contexto Cultural y Estacional
+
+```json
+{
+  "contextoCultural": {
+    "colombia": {
+      "navidad": {
+        "fechas": ["2024-12-01", "2024-12-31"],
+        "situacion": "tristeza-navidad",
+        "playlists": {
+          "nostalgico": ["Faltan Cinco Pa Las Doce", "Los Caminos de la Vida"],
+          "animarse": ["La Pollera Colorá", "El Año Viejo"]
+        },
+        "mensaje": "La Navidad en Colombia es época de familia. Es normal sentir nostalgia o tristeza si algo falta."
+      }
+    },
+    "mexico": {
+      "dia-muertos": {
+        "fechas": ["2024-11-01", "2024-11-02"],
+        "situacion": "recuerdo-difuntos",
+        "playlists": {
+          "homenaje": ["La Llorona", "Recuérdame - Coco"],
+          "celebracion": ["Son de la Negra"]
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+## 🤖 Motor de Recomendación Híbrido
+
+### Flujo del Algoritmo
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                    ENTRADA DEL USUARIO                              │
+│  "Me siento muy mal, terminé con mi novia y quiero desahogarme"    │
+└────────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  PASO 1: DETECCIÓN DE SITUACIÓN (IA)                               │
+│  ────────────────────────────────────                              │
+│  Input: Texto del usuario                                          │
+│  Output: situacion = "tusa-ruptura"                                │
+│  Confidence: 0.95                                                   │
+└────────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  PASO 2: IDENTIFICACIÓN DE AFRONTAMIENTO                           │
+│  ────────────────────────────────────────                          │
+│  Indicadores detectados: ["desahogarme"]                           │
+│  Estilo: "extrovertido-despecho"                                   │
+│  Géneros base: ["reggaeton", "salsa", "pop-latino"]                │
+└────────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  PASO 3: CONTEXTO CULTURAL                                         │
+│  ─────────────────────────                                         │
+│  Ubicación: Colombia                                                │
+│  Fecha: Diciembre 2024                                              │
+│  Contexto: Navidad                                                  │
+│  Ajuste: Incluir música navideña colombiana si aplica              │
+└────────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  PASO 4: PERSONALIZACIÓN (API Spotify)                             │
+│  ─────────────────────────────────────                             │
+│  Top Géneros Usuario: ["metal", "rock-español", "alternativo"]     │
+│  Top Artistas: ["Mägo de Oz", "Héroes del Silencio"]              │
+│                                                                     │
+│  CRUCE INTELIGENTE:                                                │
+│  ┌─────────────────────┐   ┌─────────────────────┐                │
+│  │ Estilo Afrontamiento│ + │  Gustos Personales  │                │
+│  │ (Despecho Activo)   │   │  (Rock/Metal)       │                │
+│  └─────────────────────┘   └─────────────────────┘                │
+│              │                       │                             │
+│              └───────────┬───────────┘                             │
+│                          ▼                                         │
+│  Resultado: Rock Latino de Empoderamiento                          │
+└────────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  PASO 5: RECOMENDACIÓN FINAL                                       │
+│  ───────────────────────────                                       │
+│                                                                     │
+│  🎵 Playlist Personalizada: "Rock para Superar - Despecho"         │
+│                                                                     │
+│  Canciones:                                                         │
+│  1. "Florecita Rockera" - Aterciopelados                           │
+│  2. "Labios Compartidos" - Maná                                    │
+│  3. "No Me Compares" - Alejandro Sanz                              │
+│  4. "Lamento Boliviano" - Enanitos Verdes                          │
+│  5. "Persiana Americana" - Soda Stereo                             │
+│                                                                     │
+│  Spotify URI: spotify:playlist:xxxxx                               │
+│  Mensaje: "He seleccionado rock latino que te ayudará a sentirte  │
+│            fuerte y superar este momento. La música que elegí      │
+│            combina energía con letras de empoderamiento."          │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 💻 Implementación Código Base
+
+### 1. Servicio de Autenticación Spotify
+
+```csharp
+// src/spotify/auth/SpotifyAuthService.cs
+public class SpotifyAuthService
+{
+    private readonly string _clientId;
+    private readonly string _clientSecret;
+    private readonly string _redirectUri;
+    
+    private readonly string[] _scopes = new[]
+    {
+        "user-top-read",
+        "user-read-recently-played",
+        "playlist-read-private",
+        "user-read-private"
+    };
+    
+    public string GetAuthorizationUrl(string state)
+    {
+        var scopeString = string.Join(" ", _scopes);
+        return $"https://accounts.spotify.com/authorize?" +
+               $"client_id={_clientId}&" +
+               $"response_type=code&" +
+               $"redirect_uri={Uri.EscapeDataString(_redirectUri)}&" +
+               $"scope={Uri.EscapeDataString(scopeString)}&" +
+               $"state={state}";
+    }
+    
+    public async Task<SpotifyTokens> ExchangeCodeForTokens(string code);
+    public async Task<SpotifyTokens> RefreshAccessToken(string refreshToken);
+}
+```
+
+### 2. Cliente API Spotify
+
+```csharp
+// src/spotify/client/UserProfileService.cs
+public class UserProfileService
+{
+    public async Task<UserMusicProfile> GetUserMusicProfile(string accessToken)
+    {
+        var topArtists = await GetTopArtists(accessToken, "medium_term", 20);
+        var topTracks = await GetTopTracks(accessToken, "medium_term", 50);
+        var recentlyPlayed = await GetRecentlyPlayed(accessToken, 50);
+        
+        return new UserMusicProfile
+        {
+            TopGenres = ExtractTopGenres(topArtists),
+            TopArtists = topArtists,
+            RecentMood = AnalyzeRecentMood(recentlyPlayed),
+            PreferredLanguages = DetectLanguagePreferences(topTracks)
+        };
+    }
+    
+    private List<string> ExtractTopGenres(List<Artist> artists)
+    {
+        return artists
+            .SelectMany(a => a.Genres)
+            .GroupBy(g => g)
+            .OrderByDescending(g => g.Count())
+            .Take(10)
+            .Select(g => g.Key)
+            .ToList();
+    }
+}
+```
+
+### 3. Motor de Recomendaciones
+
+```csharp
+// src/psychology/recommendations/RecommendationEngine.cs
+public class RecommendationEngine
+{
+    private readonly PlaylistCatalog _catalog;
+    private readonly UserProfileService _userProfile;
+    private readonly CulturalContextService _culturalContext;
+    
+    public async Task<MusicRecommendation> GetRecommendation(
+        string userId,
+        PsychologicalSituation situation,
+        CopingStyle copingStyle)
+    {
+        // 1. Obtener playlist base curada
+        var basePlaylist = _catalog.GetPlaylist(situation, copingStyle);
+        
+        // 2. Obtener contexto cultural
+        var cultural = await _culturalContext.GetContext(userId);
+        
+        // 3. Si el usuario conectó Spotify, personalizar
+        var userProfile = await _userProfile.GetUserMusicProfile(userId);
+        
+        if (userProfile != null)
+        {
+            // Cruzar gustos del usuario con la recomendación base
+            return HybridMatch(basePlaylist, userProfile, cultural);
+        }
+        
+        // Sin perfil, usar playlist curada base
+        return ApplyCulturalContext(basePlaylist, cultural);
+    }
+    
+    private MusicRecommendation HybridMatch(
+        CuratedPlaylist basePlaylist,
+        UserMusicProfile userProfile,
+        CulturalContext cultural)
+    {
+        // Encontrar intersección entre géneros terapéuticos y gustos del usuario
+        var matchingGenres = basePlaylist.Genres
+            .Intersect(userProfile.TopGenres)
+            .ToList();
+        
+        if (matchingGenres.Any())
+        {
+            // Hay match! Filtrar canciones que combinen ambos
+            return new MusicRecommendation
+            {
+                Playlist = FilterByGenres(basePlaylist, matchingGenres),
+                PersonalizationLevel = "high",
+                Message = GeneratePersonalizedMessage(matchingGenres, cultural)
+            };
+        }
+        
+        // No hay match directo, buscar géneros similares
+        return FindSimilarGenreMatch(basePlaylist, userProfile);
+    }
+}
+```
+
+### 4. Detector de Situación con IA
+
+```csharp
+// src/psychology/analysis/SituationDetector.cs
+public class SituationDetector
+{
+    private readonly IGenAIService _aiService;
+    
+    public async Task<DetectionResult> DetectSituation(string userMessage)
+    {
+        var prompt = $@"
+Analiza el siguiente mensaje y detecta:
+1. Situación psicológica principal (ruptura, duelo, estrés financiero, ansiedad, etc.)
+2. Estilo de afrontamiento deseado (activo/pasivo, extrovertido/introvertido)
+3. Indicadores emocionales clave
+4. Contexto cultural si se menciona
+
+Mensaje: ""{userMessage}""
+
+Responde en JSON con el formato:
+{{
+  ""situacion"": ""id-situacion"",
+  ""estiloAfrontamiento"": ""id-estilo"",
+  ""indicadores"": [""lista"", ""de"", ""indicadores""],
+  ""confianza"": 0.95,
+  ""contextoCultural"": ""pais-o-null""
+}}";
+        
+        return await _aiService.GenerateStructured<DetectionResult>(prompt);
+    }
+}
+```
+
+---
+
+## 🗄️ Modelos de Datos
+
+### Playlist Curada
+
+```csharp
+// src/playlists/models/CuratedPlaylist.cs
+public class CuratedPlaylist
+{
+    public string Id { get; set; }
+    public string Nombre { get; set; }
+    public string SpotifyUri { get; set; }  // spotify:playlist:xxxxx
+    public string SpotifyUrl { get; set; }  // https://open.spotify.com/playlist/xxxxx
+    
+    public PsychologicalSituation Situacion { get; set; }
+    public CopingStyle EstiloAfrontamiento { get; set; }
+    public List<string> Genres { get; set; }
+    public List<string> Tags { get; set; }  // ["empoderamiento", "energético", "despecho"]
+    
+    public CulturalContext? Contexto { get; set; }  // Colombia, Navidad, etc.
+    
+    public List<CuratedTrack> Canciones { get; set; }
+}
+
+public class CuratedTrack
+{
+    public string SpotifyId { get; set; }
+    public string Nombre { get; set; }
+    public string Artista { get; set; }
+    public string Genre { get; set; }
+    public List<string> EmotionalTags { get; set; }
+    public string WhyIncluded { get; set; }  // "Letra de empoderamiento tras ruptura"
+}
+```
+
+### Perfil de Usuario
+
+```csharp
+// src/spotify/models/UserPreferences.cs
+public class UserMusicProfile
+{
+    public string UserId { get; set; }
+    public List<string> TopGenres { get; set; }
+    public List<ArtistSummary> TopArtists { get; set; }
+    public List<string> PreferredLanguages { get; set; }  // ["es", "en"]
+    
+    public string Country { get; set; }  // Detectado de Spotify
+    public MoodIndicator RecentMood { get; set; }  // Basado en reproducción reciente
+    
+    public DateTime LastUpdated { get; set; }
+}
+```
+
+---
+
+## 🔄 Flujo de Usuario Completo
+
+### Sin Conexión Spotify (Solo Playlists Curadas)
+
+```
+1. Usuario: "Terminé con mi novia y me siento muy mal"
+2. IA detecta: Situación = Ruptura, sin preferencia clara
+3. Sistema pregunta: "¿Cómo te gustaría afrontar esto? 
+   - 💪 Quiero sentirme fuerte y superarlo
+   - 😢 Necesito procesar la tristeza
+   - 🎉 Quiero distraerme con algo alegre"
+4. Usuario elige: "Quiero sentirme fuerte"
+5. Sistema detecta: Colombia + Diciembre = Navidad
+6. Recomendación: Playlist curada "Despecho Navideño Colombiano"
+   - Incluye: Karol G, vallenato de empoderamiento
+   - Mensaje personalizado sobre la temporada
+```
+
+### Con Conexión Spotify (Personalización Completa)
+
+```
+1. Usuario: "Terminé con mi novia y me siento muy mal"
+2. IA detecta: Situación = Ruptura
+3. Sistema pregunta estilo de afrontamiento
+4. Usuario: "Quiero sentirme fuerte"
+5. Sistema consulta API Spotify:
+   - Top géneros: Metal, Rock en español
+   - Top artistas: Maná, Mägo de Oz
+6. CRUCE INTELIGENTE:
+   - Base: Despecho activo → Reggaetón, Salsa
+   - Usuario: Metal, Rock español
+   - Match: Rock Latino de empoderamiento
+7. Recomendación HÍBRIDA:
+   - Playlist: "Rock para Superar"
+   - Incluye: Maná, Aterciopelados, Enanitos Verdes
+   - Mensaje: "Basándome en tu amor por el rock, seleccioné
+     canciones que te darán fuerza para superar este momento"
+```
+
+---
+
+## 🛠️ Instalación y Configuración
+
+### Prerrequisitos
+
+- .NET 8.0+
+- Cuenta de Spotify Developer
+- Azure OpenAI o OpenAI API Key (para IA)
+
+### Configuración
+
+1. Clonar repositorio:
+```bash
+git clone https://github.com/Asperjasp/behuman-hackaton.git
+cd behuman-hackaton
+```
+
+2. Configurar variables de entorno:
+```bash
+cp .env.example .env
+# Editar .env con tus credenciales
+```
+
+3. Restaurar dependencias:
+```bash
+dotnet restore
+```
+
+4. Ejecutar:
+```bash
+dotnet run --project src/api
+```
+
+### Variables de Entorno
+
+```env
+# Spotify API
+SPOTIFY_CLIENT_ID=your_client_id
+SPOTIFY_CLIENT_SECRET=your_client_secret
+SPOTIFY_REDIRECT_URI=https://localhost:5001/api/auth/spotify/callback
+
+# AI Service
+OPENAI_API_KEY=your_openai_key
+# O para Azure OpenAI:
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_KEY=your_key
+AZURE_OPENAI_DEPLOYMENT=gpt-4
+
+# Base de datos (para guardar tokens y perfiles)
+DATABASE_CONNECTION_STRING=your_connection_string
+```
+
+---
+
+## 📊 Ejemplo de Playlist Curada (JSON)
+
+```json
+// data/playlists/situations/tusa-ruptura.json
+{
+  "id": "tusa-ruptura-despecho-activo",
+  "situacion": "tusa-ruptura",
+  "estiloAfrontamiento": "extrovertido-despecho",
+  "nombre": "Despecho Power 💪",
+  "descripcion": "Canciones para sentirte fuerte después de una ruptura",
+  "spotifyPlaylistUri": "spotify:playlist:37i9dQZF1DX1HCSbq2Lp9V",
+  "genres": ["reggaeton", "pop-latino", "salsa", "urbano"],
+  "tags": ["empoderamiento", "superacion", "fuerza", "independencia"],
+  "canciones": [
+    {
+      "spotifyId": "7MXVkk9YMctZqd1Srtv4MB",
+      "nombre": "Tusa",
+      "artista": "Karol G, Nicki Minaj",
+      "whyIncluded": "Himno del despecho moderno, letra de superación"
+    },
+    {
+      "spotifyId": "xxx",
+      "nombre": "Soltera",
+      "artista": "Lunay",
+      "whyIncluded": "Celebra la independencia post-ruptura"
+    }
+  ],
+  "mensajeTerapeutico": "Estas canciones celebran tu fuerza y capacidad de superar. El despecho puede ser un motor para crecer."
+}
+```
+
+---
+
+## 🎯 Roadmap
+
+- [x] Diseño de arquitectura
+- [ ] Implementación autenticación Spotify OAuth
+- [ ] Base de datos de playlists curadas (50+ playlists)
+- [ ] Motor de detección de situaciones con IA
+- [ ] Sistema de matching híbrido
+- [ ] Contexto cultural automático (geolocalización + fecha)
+- [ ] API REST completa
+- [ ] Frontend/Chatbot de prueba
+- [ ] Integración con sistemas de chat (WhatsApp, Telegram)
+
+---
+
+## 👥 Contribuir
+
+### Cómo agregar nuevas playlists curadas
+
+1. Crear archivo JSON en `data/playlists/situations/`
+2. Seguir el esquema de `CuratedPlaylist`
+3. Incluir `whyIncluded` para cada canción (razón terapéutica)
+4. Agregar tags emocionales apropiados
+
+### Cómo agregar contextos culturales
+
+1. Editar `data/playlists/cultural/`
+2. Incluir fechas relevantes y playlists asociadas
+
+---
+
+## 📄 Licencia
+
+MIT License - Ver [LICENSE](LICENSE) para más detalles.
+
+---
+
+## 🙏 Agradecimientos
+
+- Equipo de psicólogos consultores
+- Curadores musicales culturales
+- Spotify Web API
