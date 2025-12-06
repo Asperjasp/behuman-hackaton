@@ -1,2 +1,5 @@
+# Ignore Data
+data/
 
+# Ignore venv
 Behuman-Hackaton/
