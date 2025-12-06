@@ -3,3 +3,11 @@ data/
 
 # Ignore venv
 Behuman-Hackaton/
+
+
+# Ignore cache
+
+__pycache__
+
+# Ignore test
+test/

@@ -830,10 +830,97 @@ tenacity>=8.2.0
 
 ---
 
+## 📦 Estructura de Commits Python (Scraper)
+
+### 🗂️ Archivos por Feature
+
+| Commit | Archivos | Descripción |
+|--------|----------|-------------|
+| **1. Core Scraper** | `compensar_playwright_scraper.py`, `run_playwright_scraper.py` | Scraper principal con Playwright. Extrae productos con precios A/B/C usando hover |
+| **2. Database** | `database.py` | Módulo de persistencia SQLite |
+| **3. Scrapers Alternativos** | `compensar_scraper.py`, `compensar_selenium_scraper.py` | Intentos con Requests y Selenium (no funcionaron por JS dinámico) |
+| **4. Investigación API** | `investigate_api.py`, `investigate_prices.py`, `compensar_vtex_scraper.py` | Scripts de investigación: descubrimos que usa Oracle Commerce Cloud con Knockout.js |
+| **5. Configuración** | `__init__.py`, `requirements.txt`, `.gitignore` | Setup del proyecto Python |
+
+### 📋 Comandos Git Sugeridos
+
+```bash
+# 1. Core Scraper (lo más importante)
+git add src/scraper/compensar_playwright_scraper.py
+git add src/scraper/run_playwright_scraper.py
+git commit -m "feat(scraper): add Playwright scraper with hover for A/B/C prices
+
+- Uses Playwright + BeautifulSoup for JS-rendered content
+- Implements hover to reveal category prices (A, B, C, No afiliado)
+- Exports to JSON and SQLite
+- CLI with argparse for category selection"
+
+# 2. Database module
+git add src/scraper/database.py
+git commit -m "feat(scraper): add SQLite database module for product storage"
+
+# 3. Scrapers alternativos (histórico de intentos)
+git add src/scraper/compensar_scraper.py
+git add src/scraper/compensar_selenium_scraper.py
+git commit -m "docs(scraper): add alternative scrapers (requests, selenium)
+
+These were attempted before Playwright but don't work because:
+- requests: Can't execute JavaScript
+- selenium: WSL/Windows Chrome compatibility issues"
+
+# 4. Investigación (opcional, pero documenta el proceso)
+git add src/scraper/investigate_api.py
+git add src/scraper/investigate_prices.py
+git add src/scraper/compensar_vtex_scraper.py
+git commit -m "docs(scraper): add API investigation scripts
+
+Discovered Compensar uses:
+- Oracle Commerce Cloud (not VTEX as initially thought)
+- Knockout.js for dynamic content
+- Hover-based price reveal for affiliation categories"
+
+# 5. Configuración del proyecto
+git add src/scraper/__init__.py
+git add requirements.txt
+git add .gitignore
+git commit -m "chore: add Python project configuration
+
+- requirements.txt with playwright, beautifulsoup4, lxml
+- .gitignore for data/, venv, __pycache__, test/"
+
+# 6. Push todos los commits
+git push origin main
+```
+
+### 🧹 Archivos Ignorados (No commitear)
+
+| Carpeta/Archivo | Razón |
+|-----------------|-------|
+| `data/` | Datos scrapeados (generados, no código) |
+| `Behuman-Hackaton/` | Virtual environment |
+| `__pycache__/` | Bytecode Python compilado |
+| `test/` | Tutoriales y pruebas (learn_scraping.py) |
+
+### 🔍 Resumen Técnico del Scraper
+
+**¿Por qué Playwright?**  
+Tienda Compensar usa Oracle Commerce Cloud con Knockout.js que renderiza contenido dinámicamente. Requests/BeautifulSoup solo no pueden ver el contenido.
+
+**¿Por qué hover?**  
+Los precios por categoría (A, B, C, No afiliado) solo se muestran cuando el usuario pasa el mouse sobre los botones correspondientes. Playwright simula esto con `element.hover()`.
+
+**Stack final:**
+- `playwright` - Automatización de navegador
+- `beautifulsoup4` + `lxml` - Parsing HTML
+- `sqlite3` - Base de datos
+
+---
+
 ## 🎯 Roadmap
 
 - [x] Diseño de arquitectura
 - [x] Scraper de Tienda Compensar
+- [x] Extracción de precios por categoría (A/B/C/No afiliado) con hover
 - [ ] Implementación autenticación Spotify OAuth
 - [ ] Base de datos de playlists curadas (50+ playlists)
 - [ ] Motor de detección de situaciones con IA
