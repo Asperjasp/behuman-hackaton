@@ -166,6 +166,8 @@ SPOTIFY_CLIENT_SECRET=tu_client_secret
 SPOTIFY_REDIRECT_URI=https://tudominio.com/api/auth/spotify/callback
 ```
 
+Sabemos que el Callback en entorno de producción que vamos a poneren el entorno de desarrolladores de spotify https://developer.spotify.com/dashboard/create en el entorno asociado a la cuenta vividbehuman@gmail,com, va a utilizar el entorno local con la URL de entonro local http://127.0.0.1:8888/callback , y con la URL en producción https://behuman.chat lo cual 
+
 ---
 
 ## 🎭 Sistema de Playlists Curadas (Punto 1: Asesoramiento Base)
@@ -708,9 +710,130 @@ DATABASE_CONNECTION_STRING=your_connection_string
 
 ---
 
+## 🛒 Scraper de Tienda Compensar
+
+Sistema de web scraping para extraer productos y servicios de [Tienda Compensar](https://www.tiendacompensar.com), estructurado en base de datos SQLite.
+
+### 📂 Estructura del Scraper
+
+```
+src/scraper/
+├── __init__.py                 # Exports del módulo
+├── compensar_scraper.py        # Scraper con Requests + BeautifulSoup
+├── selenium_scraper.py         # Scraper con Selenium (contenido JS)
+├── database.py                 # Base de datos SQLite
+└── run_scraper.py              # Script principal de ejecución
+```
+
+### 🔧 Instalación
+
+```bash
+# Activar entorno virtual
+source Behuman-Hackaton/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+### 🚀 Uso del Scraper
+
+#### Descubrir categorías disponibles
+
+```bash
+python -m src.scraper.run_scraper --discover
+```
+
+#### Scrapear todas las categorías
+
+```bash
+python -m src.scraper.run_scraper
+```
+
+#### Scrapear categorías específicas
+
+```bash
+python -m src.scraper.run_scraper --categories turismo spa gimnasio
+```
+
+#### Usar Selenium (para contenido renderizado con JavaScript)
+
+```bash
+python -m src.scraper.run_scraper --use-selenium
+```
+
+#### Exportar a JSON
+
+```bash
+python -m src.scraper.run_scraper --export-json data/compensar/productos.json
+```
+
+### 📊 Categorías Disponibles
+
+Basado en el menú de navegación de Tienda Compensar:
+
+| Público Objetivo | Subcategorías |
+|-----------------|---------------|
+| **Adulto Mayor** | Turismo, Spa, Gimnasio, Música, Natación, Cursos, Prácticas, Biblioteca |
+| **Adultos** | Vacaciones recreativas, Bienestar, Eventos, Actividades culturales |
+| **Adolescentes** | Cursos, Deportes, Actividades recreativas |
+| **Niños** | Vacaciones, Cursos, Actividades |
+| **Bebés** | Estimulación, Natación |
+| **Embarazadas** | Preparación, Bienestar |
+
+### 🗃️ Base de Datos
+
+Los datos se almacenan en SQLite en `data/compensar/compensar.db`:
+
+```sql
+-- Tablas principales
+categories (id, slug, name, description, parent_category)
+products (id, category_id, name, description, price, price_numeric, image_url, product_url)
+scraping_logs (id, category_slug, products_found, success, scraped_at)
+```
+
+#### Ejemplo de consulta
+
+```python
+from src.scraper.database import CompensarDatabase
+
+with CompensarDatabase() as db:
+    # Obtener productos de turismo
+    turismo = db.get_products_by_category("turismo")
+    
+    # Buscar por precio
+    ofertas = db.search_products("san andres", max_price=500000)
+    
+    # Estadísticas
+    stats = db.get_statistics()
+    print(f"Total productos: {stats['total_products']}")
+```
+
+### 📦 Dependencias del Scraper
+
+```txt
+# Web Scraping
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Database
+sqlite3 (built-in)
+
+# Selenium (opcional, para JS)
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
+# Utilities
+tqdm>=4.66.0
+tenacity>=8.2.0
+```
+
+---
+
 ## 🎯 Roadmap
 
 - [x] Diseño de arquitectura
+- [x] Scraper de Tienda Compensar
 - [ ] Implementación autenticación Spotify OAuth
 - [ ] Base de datos de playlists curadas (50+ playlists)
 - [ ] Motor de detección de situaciones con IA
