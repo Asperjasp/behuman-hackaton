@@ -1,15 +1,124 @@
-# 🎵 BeHuman - Asesoramiento Psicocultural con Música
+# 🧠 BeHuman - Sistema Operativo de Manejo de Emociones
 
-Sistema de recomendación musical terapéutica que combina asesoramiento psicológico con personalización cultural y gustos musicales del usuario.
+Plataforma de bienestar emocional que integra asesoramiento psicológico, actividades terapéuticas y recomendaciones personalizadas para mejorar la calidad de vida del usuario.
 
 ## 🎯 Concepto
 
-BeHuman es un agente de IA que brinda apoyo emocional personalizado a través de la música, considerando:
+BeHuman es un **sistema operativo emocional** - un agente de IA que acompaña al usuario en su bienestar mental a través de múltiples canales:
 
-1. **Situación Psicológica**: Identificación del problema (ruptura, duelo, estrés financiero, etc.)
-2. **Estilo de Afrontamiento**: Cómo prefiere el usuario lidiar con la situación
-3. **Contexto Cultural**: Temporada (Navidad, etc.), región (Colombia, México, etc.)
-4. **Gustos Personales**: Géneros y artistas favoritos del usuario
+### Pilares del Sistema
+
+| Pilar | Descripción | Estado |
+|-------|-------------|--------|
+| 🧭 **Orientación Emocional** | Detección de estado emocional y situaciones de vida | Core |
+| 🎯 **Actividades Terapéuticas** | Recomendación de actividades, talleres y experiencias | ✅ En desarrollo |
+| 🎵 **Música Terapéutica** | Playlists personalizadas según estado emocional | Feature |
+| 📊 **Seguimiento** | Tracking de progreso y patrones emocionales | Roadmap |
+
+### Factores de Personalización
+
+1. **Situación Psicológica**: Identificación del estado emocional (estrés, ansiedad, duelo, etc.)
+2. **Perfil del Usuario**: Características personales (activo, social, introvertido, etc.)
+3. **Contexto Cultural**: Temporada, región y preferencias culturales
+4. **Historial de Interacciones**: Aprendizaje continuo de preferencias
+
+---
+
+## 🔄 Arquitectura del Sistema de Recomendaciones
+
+### Niveles de Sofisticación
+
+El sistema implementa una arquitectura de recomendaciones escalable con 4 niveles:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    NIVEL 4: HÍBRIDO + CONTEXTUAL                       │
+│  Combina todos los niveles + contexto temporal, ubicación, clima       │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                 NIVEL 3: COLLABORATIVE FILTERING                 │   │
+│  │  "Usuarios similares a ti también disfrutaron..."               │   │
+│  │  ┌─────────────────────────────────────────────────────────┐    │   │
+│  │  │            NIVEL 2: EMBEDDINGS SEMÁNTICOS               │    │   │
+│  │  │  Vectores de 1536 dimensiones con pgvector             │    │   │
+│  │  │  ┌─────────────────────────────────────────────────┐   │    │   │
+│  │  │  │         NIVEL 1: TAG MATCHING (Actual)          │   │    │   │
+│  │  │  │  profile_tags + situation_tags                  │   │    │   │
+│  │  │  └─────────────────────────────────────────────────┘   │    │   │
+│  │  └─────────────────────────────────────────────────────────┘    │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Nivel 1: Tag Matching (Implementado ✅)
+```sql
+-- Matching simple por etiquetas
+SELECT * FROM activity_catalog
+WHERE profile_tags && ARRAY['social', 'activo']
+  AND situation_tags && ARRAY['estrés alto'];
+```
+
+#### Nivel 2: Embeddings Semánticos (Roadmap)
+```sql
+-- Búsqueda por similitud vectorial
+SELECT *, 
+       1 - (embedding <=> query_embedding) as similarity
+FROM activity_catalog
+ORDER BY embedding <=> query_embedding
+LIMIT 10;
+```
+- Requiere: OpenAI API para generar embeddings de descripción + tags
+- Tecnología: pgvector en Supabase
+
+#### Nivel 3: Collaborative Filtering (Roadmap)
+```sql
+-- Usuarios similares con gustos parecidos
+WITH similar_users AS (
+  SELECT user_id, similarity_score
+  FROM calculate_user_similarity(current_user_id)
+  ORDER BY similarity_score DESC
+  LIMIT 50
+)
+SELECT activity_id, AVG(rating) as predicted_score
+FROM user_activities ua
+JOIN similar_users su ON ua.user_id = su.user_id
+GROUP BY activity_id
+ORDER BY predicted_score DESC;
+```
+
+#### Nivel 4: Híbrido + Contextual (Roadmap)
+```python
+def get_hybrid_recommendations(user, context):
+    # Combinar scores de cada nivel
+    tag_score = get_tag_matches(user.profile_tags, user.situation_tags)
+    semantic_score = get_embedding_similarity(user.embedding, activities)
+    collab_score = get_collaborative_predictions(user.id)
+    
+    # Factores contextuales
+    context_boost = calculate_context_boost(
+        time_of_day=context.hour,
+        day_of_week=context.weekday,
+        weather=context.weather,
+        location=context.city
+    )
+    
+    # Score final ponderado
+    final_score = (
+        tag_score * 0.2 +
+        semantic_score * 0.3 +
+        collab_score * 0.3 +
+        context_boost * 0.2
+    )
+    return sort_by_score(final_score)
+```
+
+### Tabla de Madurez del Sistema
+
+| Nivel | Precisión | Complejidad | Data Requerida | Estado |
+|-------|-----------|-------------|----------------|--------|
+| Tag Matching | ~60% | Baja | Tags manuales | ✅ Implementado |
+| Embeddings | ~75% | Media | Descripciones | 🔜 Próximo |
+| Collaborative | ~85% | Alta | Historial usuarios | 📋 Roadmap |
+| Híbrido | ~90%+ | Muy Alta | Todo lo anterior | 📋 Roadmap |
 
 ## 📁 Estructura del Proyecto
 
