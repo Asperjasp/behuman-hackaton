@@ -120,6 +120,295 @@ def get_hybrid_recommendations(user, context):
 | Collaborative | ~85% | Alta | Historial usuarios | 📋 Roadmap |
 | Híbrido | ~90%+ | Muy Alta | Todo lo anterior | 📋 Roadmap |
 
+---
+
+## 🧠 Framework FACE: Collaborative Filtering + LLM
+
+**Paper de referencia**: "FACE: A General Framework for Mapping Collaborative Filtering Embeddings into LLM Tokens" - [arXiv:2510.15729](https://arxiv.org/abs/2510.15729) (NeurIPS 2025)
+
+### ¿Por qué FACE para BeHuman?
+
+| Problema Actual | Solución FACE |
+|-----------------|---------------|
+| Tag matching no aprende de uso | CF captura preferencias implícitas |
+| No hay similitud entre usuarios | Embeddings encuentran usuarios similares |
+| Recomendaciones no explicables | Descriptores LLM permiten explicar POR QUÉ |
+| Cold-start para nuevos usuarios | Decoder genera embeddings desde texto |
+
+### Arquitectura del Framework
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           FACE FRAMEWORK                                     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────┐     ┌─────────────────────────────────────────────────┐ │
+│  │ COLLABORATIVE   │     │         STAGE 1: MAPPING                        │ │
+│  │ FILTERING       │     │  ┌─────────────┐  ┌──────────┐  ┌────────────┐  │ │
+│  │                 │     │  │ Disentangled│  │Quantized │  │ LLM Token  │  │ │
+│  │ User-Item       │────▶│  │ Projection  │─▶│AutoEncoder│─▶│ Codebook   │  │ │
+│  │ Interactions    │     │  │ (n aspects) │  │ (RQ-VAE) │  │(Descriptors)│ │ │
+│  │                 │     │  └─────────────┘  └──────────┘  └────────────┘  │ │
+│  │ ┌───────────┐   │     └─────────────────────────────────────────────────┘ │
+│  │ │ LightGCN  │   │                           │                             │
+│  │ └───────────┘   │                           ▼                             │
+│  └─────────────────┘     ┌─────────────────────────────────────────────────┐ │
+│                          │         STAGE 2: ALIGNMENT                      │ │
+│                          │  Contrastive Learning (align with text)         │ │
+│                          └─────────────────────────────────────────────────┘ │
+│                                        │                                     │
+│                                        ▼                                     │
+│                          ┌─────────────────────────────────────────────────┐ │
+│                          │  OUTPUT: Recommendations + Explicaciones        │ │
+│                          └─────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Pipeline de BeHuman
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   SCRAPER    │    │  SUPABASE    │    │   USER       │
+│  Compensar   │───▶│  activity_   │◀───│ interactions │
+└──────────────┘    │  catalog     │    └──────────────┘
+                    └──────────────┘
+                           │                    │
+                           ▼                    ▼
+                  ┌─────────────────────────────────────┐
+                  │     COLLABORATIVE FILTERING         │
+                  │  (LightGCN sobre user-activity)    │
+                  │                                     │
+                  │  user_embeddings [n_users, 256]    │
+                  │  activity_embeddings [n_items, 256] │
+                  └─────────────────────────────────────┘
+                                   │
+                                   ▼
+                  ┌─────────────────────────────────────┐
+                  │      FACE: Disentangle + Quantize   │
+                  │                                     │
+                  │  user_descriptors: ["social",       │
+                  │   "adventurous", "cultural", ...]   │
+                  └─────────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────┐    ┌─────────────────────────────────────┐
+│  AI AGENT    │    │         HYBRID RECOMMENDER          │
+│  (Emotional  │───▶│  1. CF similarity (embeddings)      │
+│   Context)   │    │  2. Tag matching (profile/situation)│
+└──────────────┘    │  3. LLM reasoning (descriptors)     │
+                    │  4. Contextual boost (time/emotion) │
+                    └─────────────────────────────────────┘
+                                   │
+                                   ▼
+                  ┌─────────────────────────────────────┐
+                  │     PERSONALIZED RECOMMENDATIONS     │
+                  │  + Explicaciones en lenguaje natural │
+                  └─────────────────────────────────────┘
+```
+
+### Componentes Clave
+
+#### 1. LightGCN (Collaborative Filtering Base)
+
+```python
+class LightGCN(nn.Module):
+    """
+    Por qué funciona:
+    - Usuarios e items son nodos en un grafo bipartito
+    - Las interacciones son aristas
+    - Los embeddings se propagan por el grafo
+    - Usuarios similares tendrán embeddings cercanos
+    """
+    
+    def __init__(self, n_users, n_items, embedding_dim=256, n_layers=3):
+        super().__init__()
+        self.user_embedding = nn.Embedding(n_users, embedding_dim)
+        self.item_embedding = nn.Embedding(n_items, embedding_dim)
+        self.n_layers = n_layers
+        
+    def forward(self, adj_matrix):
+        all_emb = torch.cat([self.user_embedding.weight, self.item_embedding.weight])
+        embeddings_list = [all_emb]
+        
+        for _ in range(self.n_layers):
+            all_emb = torch.sparse.mm(adj_matrix, all_emb)
+            embeddings_list.append(all_emb)
+        
+        # Promedio de todas las capas (key insight de LightGCN)
+        return torch.stack(embeddings_list, dim=1).mean(dim=1)
+```
+
+#### 2. Disentangled Projection
+
+```python
+class DisentangledProjection(nn.Module):
+    """
+    Descompone el embedding CF en n aspectos interpretables.
+    Ejemplo: {social, aventurero, relajación, cultural, ...}
+    """
+    
+    def __init__(self, embedding_dim=256, n_aspects=16):
+        super().__init__()
+        self.projectors = nn.ModuleList([
+            nn.Linear(embedding_dim, embedding_dim // n_aspects)
+            for _ in range(n_aspects)
+        ])
+        
+    def forward(self, cf_embedding):
+        aspects = [proj(cf_embedding) for proj in self.projectors]
+        return torch.stack(aspects, dim=1)  # [batch, n_aspects, d/n]
+```
+
+#### 3. Quantized Autoencoder (VQ-VAE)
+
+```python
+class QuantizedAutoencoder(nn.Module):
+    """
+    Convierte embeddings continuos a tokens del vocabulario LLM.
+    Los LLMs entienden PALABRAS, no vectores continuos.
+    """
+    
+    def __init__(self, llm_vocab_embeddings, quantization_levels=4):
+        super().__init__()
+        self.codebook = llm_vocab_embeddings  # [vocab_size, 768]
+        
+    def forward(self, aspect_embedding):
+        # Residual Quantization: encuentra palabras más cercanas
+        residual = aspect_embedding
+        selected_tokens = []
+        
+        for _ in range(self.quantization_levels):
+            distances = torch.cdist(residual, self.codebook)
+            nearest_idx = distances.argmin(dim=-1)
+            selected_tokens.append(nearest_idx)
+            residual = residual - self.codebook[nearest_idx]
+        
+        return selected_tokens[0]  # Descriptor principal
+```
+
+### Métricas de Engagement (Supabase)
+
+```sql
+-- Tabla de interacciones de usuario
+CREATE TABLE user_interactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id),
+    activity_id UUID REFERENCES activity_catalog(id),
+    
+    -- Tipo de interacción
+    interaction_type TEXT CHECK (interaction_type IN (
+        'view',      -- Vio la actividad (0.1)
+        'click',     -- Click para detalles (0.3)
+        'bookmark',  -- Guardó para después (0.5)
+        'share',     -- Compartió (0.6)
+        'start',     -- Comenzó actividad (0.7)
+        'complete',  -- Completó (1.0)
+        'rate'       -- Calificó (rating/5)
+    )),
+    
+    -- Métricas
+    view_duration_seconds INTEGER,
+    rating NUMERIC(2,1),            -- 1.0 - 5.0
+    detected_emotion TEXT,          -- anxious, stressed, sad...
+    
+    -- Contexto
+    time_of_day TEXT,               -- morning, afternoon, evening, night
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Vista materializada para CF (matriz user-activity)
+CREATE MATERIALIZED VIEW user_activity_matrix AS
+SELECT 
+    user_id,
+    activity_id,
+    SUM(CASE interaction_type
+        WHEN 'view' THEN 0.1
+        WHEN 'click' THEN 0.3
+        WHEN 'bookmark' THEN 0.5
+        WHEN 'start' THEN 0.7
+        WHEN 'complete' THEN 1.0
+        WHEN 'rate' THEN rating / 5.0
+        ELSE 0.2
+    END) as implicit_score
+FROM user_interactions
+GROUP BY user_id, activity_id;
+
+-- Embeddings generados por CF
+CREATE TABLE user_embeddings (
+    user_id UUID PRIMARY KEY REFERENCES users(id),
+    embedding vector(256),
+    descriptors TEXT[],  -- Tokens LLM (descriptores FACE)
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE activity_embeddings (
+    activity_id UUID PRIMARY KEY REFERENCES activity_catalog(id),
+    embedding vector(256),
+    descriptors TEXT[],
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Índices para búsqueda vectorial
+CREATE INDEX idx_user_emb ON user_embeddings USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX idx_activity_emb ON activity_embeddings USING ivfflat (embedding vector_cosine_ops);
+```
+
+### Función de Recomendación Híbrida
+
+```python
+async def get_personalized_recommendations(
+    user_id: str,
+    emotional_state: str,
+    situation_tags: list[str],
+    limit: int = 10
+) -> list[dict]:
+    """Recomendación híbrida combinando todos los niveles."""
+    
+    # 1. CF Score: similitud de embeddings
+    cf_scores = await get_cf_similarity_scores(user_id)
+    
+    # 2. Tag Score: matching de etiquetas
+    tag_scores = await get_tag_matching_scores(user_id, situation_tags)
+    
+    # 3. Descriptor Score: similitud semántica via LLM
+    descriptor_scores = await get_descriptor_similarity_scores(user_id)
+    
+    # 4. Contextual Boost
+    context_boost = calculate_context_boost(
+        time_of_day=get_current_time_of_day(),
+        emotional_state=emotional_state
+    )
+    
+    # Combinar scores con pesos
+    final_scores = {
+        activity_id: (
+            cf_scores.get(activity_id, 0) * 0.30 +
+            tag_scores.get(activity_id, 0) * 0.25 +
+            descriptor_scores.get(activity_id, 0) * 0.25 +
+            context_boost.get(activity_id, 0) * 0.20
+        )
+        for activity_id in cf_scores.keys()
+    }
+    
+    # Generar explicaciones usando descriptores
+    return await enrich_with_explanations(final_scores, emotional_state, limit)
+```
+
+### Roadmap de Implementación
+
+| Fase | Semanas | Tareas | Estado |
+|------|---------|--------|--------|
+| **1. Data** | 1-2 | Tablas de interacciones, tracking engagement, setup pgvector | 📋 |
+| **2. CF** | 3-4 | LightGCN, entrenar con datos, generar embeddings | 📋 |
+| **3. FACE** | 5-6 | Disentangled Projection, Quantized Autoencoder, Contrastive Alignment | 📋 |
+| **4. Hybrid** | 7-8 | Combinar CF + Tags + Descriptors, explicaciones, A/B testing | 📋 |
+| **5. Prod** | 9-10 | Optimización latencia, caching, monitoring | 📋 |
+
+**Requisitos mínimos**:
+- ~1000 interacciones para entrenar CF
+- MiniLM suficiente (no necesitamos LLaMA)
+- Embeddings pre-computados para <100ms latencia
+
 ## 📁 Estructura del Proyecto
 
 ```
