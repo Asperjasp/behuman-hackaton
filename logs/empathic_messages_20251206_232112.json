@@ -1,0 +1,122 @@
+[
+  {
+    "case": "Adulto mayor - Pérdida de padres (tu ejemplo exacto)",
+    "profile": {
+      "name": "Ricardo",
+      "age": 59,
+      "hobbies": [
+        "lectura",
+        "jardinería",
+        "caminar"
+      ],
+      "goals": [
+        "fortalecer relaciones personales",
+        "aprovechar el tiempo"
+      ]
+    },
+    "situation": {
+      "type": "perdida_familiar",
+      "subtype": "padres",
+      "context": "Acaba de perder a sus padres por enfermedad"
+    },
+    "activity": "Estadía de descanso",
+    "message": "Ricardo, sé que hoy te toca enfrentarte a la pérdida de tus padres. Este dolor es parte de haber amado profundamente. Por eso, combinando tu interés en lectura con algo nuevo, te sugerimos estadía de descanso— a veces el mejor paso es simplemente pausar. Un paso hacia fortalecer relaciones personales.",
+    "char_count": 302
+  },
+  {
+    "case": "Joven - Ruptura amorosa",
+    "profile": {
+      "name": "Carlos",
+      "age": 19,
+      "hobbies": [
+        "música",
+        "deportes",
+        "videojuegos"
+      ],
+      "goals": [
+        "superar la ruptura",
+        "conocer gente nueva"
+      ]
+    },
+    "situation": {
+      "type": "ruptura_amorosa",
+      "subtype": "reciente",
+      "context": "Ruptura después de 2 años"
+    },
+    "activity": "Natación libre",
+    "message": "Carlos, sé que hoy te toca procesar el fin de una relación importante. El vacío actual dejará espacio para algo nuevo. Por eso, aprovechando tu gusto por deportes, te recomendamos natación libre— el agua ayuda a liberar tensiones acumuladas. Un paso hacia superar la ruptura.",
+    "char_count": 275
+  },
+  {
+    "case": "Profesional - Ansiedad laboral",
+    "profile": {
+      "name": "María",
+      "age": 35,
+      "hobbies": [
+        "yoga",
+        "lectura",
+        "cocina"
+      ],
+      "goals": [
+        "manejar el estrés",
+        "encontrar balance"
+      ]
+    },
+    "situation": {
+      "type": "ansiedad",
+      "subtype": "laboral",
+      "context": "Presión constante en el trabajo"
+    },
+    "activity": "Yoga grupal",
+    "message": "María, sé que hoy te toca manejar la presión que el trabajo pone sobre ti. La calma es una habilidad que se entrena. Por eso, aprovechando tu gusto por yoga, te recomendamos yoga grupal— un espacio para reconectar con tu cuerpo y calmar la mente. Un paso hacia manejar el estrés.",
+    "char_count": 279
+  },
+  {
+    "case": "Adulta mayor - Duelo de esposo",
+    "profile": {
+      "name": "Carmen",
+      "age": 65,
+      "hobbies": [
+        "jardinería",
+        "tejido",
+        "caminar"
+      ],
+      "goals": [
+        "procesar la pérdida",
+        "mantener actividad"
+      ]
+    },
+    "situation": {
+      "type": "duelo",
+      "subtype": "prolongado",
+      "context": "Perdió a su esposo hace 6 meses"
+    },
+    "activity": "Caminata ecológica",
+    "message": "Carmen, sé que hoy te toca continuar tu camino mientras honras la memoria. El duelo no es algo que superar, sino integrar. Por eso, aprovechando tu gusto por jardinería, te recomendamos caminata ecológica— la naturaleza tiene un efecto restaurador comprobado. Un paso hacia procesar la pérdida.",
+    "char_count": 294
+  },
+  {
+    "case": "Adulto joven - Soledad post-mudanza",
+    "profile": {
+      "name": "Alex",
+      "age": 28,
+      "hobbies": [
+        "arte",
+        "música",
+        "cine"
+      ],
+      "goals": [
+        "hacer amigos",
+        "sentir comunidad"
+      ]
+    },
+    "situation": {
+      "type": "soledad",
+      "subtype": "mudanza",
+      "context": "Se mudó a nueva ciudad hace 3 meses"
+    },
+    "activity": "Taller de arte-terapia",
+    "message": "Alex, sé que hoy te toca construir conexiones en un lugar nuevo. Buscar conexión es señal de fortaleza. Por eso, aprovechando tu gusto por arte, te recomendamos taller de arte-terapia— expresar lo que las palabras no alcanzan. Un paso hacia hacer amigos.",
+    "char_count": 254
+  }
+]

@@ -1,0 +1,212 @@
+[
+  {
+    "case": "Adulto mayor - Pérdida de padres",
+    "message": "Ricardo, sé que hoy te toca enfrentarte a la pérdida de tus padres. No hay tiempo correcto para sanar, solo el tuyo. Por eso, combinando tu interés en lectura con algo nuevo, te sugerimos Pasadía Parque Acuático Lagosol sin transporte Un paso hacia fortalecer relaciones personales.",
+    "message_length": 282,
+    "recommendations": [
+      {
+        "product": {
+          "id": "turismo-4679",
+          "nombre": "Pasadía Parque Acuático Lagosol sin transporte",
+          "categoria": "Adulto Mayor",
+          "subcategoria": "turismo",
+          "precio_desde": 33800.0,
+          "url": "https://www.tiendacompensar.com/lagosol/pasadia-parque-acuatico-lagosol-sin-transporte/HER-B-ALJ-PAS-PLF-002",
+          "imagen_url": "https://www.tiendacompensar.com/ccstore/v1/images/?source=/file/v3393540332758315767/products/pasadia-parque-acuatico-sin-transporte-31-07-2025.jpg&height=400&width=400",
+          "promocion": true,
+          "activity_type": "naturaleza"
+        },
+        "score": 80.0,
+        "reasons": [
+          "Actividad de tipo 'naturaleza' es beneficiosa para perdida_familiar",
+          "Apropiado para tu grupo de edad",
+          "En promoción"
+        ]
+      },
+      {
+        "product": {
+          "id": "turismo-4297",
+          "nombre": "Pasadía Parque Acuático Lagosol con transporte",
+          "categoria": "Adulto Mayor",
+          "subcategoria": "turismo",
+          "precio_desde": 72500.0,
+          "url": "https://www.tiendacompensar.com/lagosol/pasadia-parque-acuatico-lagosol-con-transporte/HER-B-ALJ-PAS-PLF-001",
+          "imagen_url": "https://www.tiendacompensar.com/ccstore/v1/images/?source=/file/v7878957617927786700/products/pasadia-parque-acuatico-con-transporte-31-07-2025.jpg&height=300&width=300",
+          "promocion": true,
+          "activity_type": "naturaleza"
+        },
+        "score": 80.0,
+        "reasons": [
+          "Actividad de tipo 'naturaleza' es beneficiosa para perdida_familiar",
+          "Apropiado para tu grupo de edad",
+          "En promoción"
+        ]
+      },
+      {
+        "product": {
+          "id": "turismo-7873",
+          "nombre": "Entrada Parque Acuático Lagosol",
+          "categoria": "Adulto Mayor",
+          "subcategoria": "turismo",
+          "precio_desde": 26300.0,
+          "url": "https://www.tiendacompensar.com/lagosol/entrada-parque-acuatico-lagosol/HER-B-ALJ-PAS-ENT-001",
+          "imagen_url": "https://www.tiendacompensar.com/ccstore/v1/images/?source=/file/v585083665622379628/general/entrada-parque-acuatico-31-07-2025.jpg&height=300&width=300",
+          "promocion": true,
+          "activity_type": "naturaleza"
+        },
+        "score": 80.0,
+        "reasons": [
+          "Actividad de tipo 'naturaleza' es beneficiosa para perdida_familiar",
+          "Apropiado para tu grupo de edad",
+          "En promoción"
+        ]
+      }
+    ],
+    "context": {
+      "profile_name": "Ricardo",
+      "profile_age": 59,
+      "situation_type": "perdida_familiar",
+      "situation_subtype": "padres"
+    }
+  },
+  {
+    "case": "Joven - Ruptura amorosa",
+    "message": "Carlos, sé que hoy te toca procesar el fin de una relación importante. Lo que sientes ahora no es permanente. Por eso, combinando tu interés en música con algo nuevo, te sugerimos Pasadía Parque Acuático Lagosol sin transporte Un paso hacia superar la ruptura.",
+    "message_length": 260,
+    "recommendations": [
+      {
+        "product": {
+          "id": "turismo-4679",
+          "nombre": "Pasadía Parque Acuático Lagosol sin transporte",
+          "categoria": "Adulto Mayor",
+          "subcategoria": "turismo",
+          "precio_desde": 33800.0,
+          "url": "https://www.tiendacompensar.com/lagosol/pasadia-parque-acuatico-lagosol-sin-transporte/HER-B-ALJ-PAS-PLF-002",
+          "imagen_url": "https://www.tiendacompensar.com/ccstore/v1/images/?source=/file/v3393540332758315767/products/pasadia-parque-acuatico-sin-transporte-31-07-2025.jpg&height=400&width=400",
+          "promocion": true,
+          "activity_type": "naturaleza"
+        },
+        "score": 80.0,
+        "reasons": [
+          "Actividad de tipo 'naturaleza' es beneficiosa para ruptura_amorosa",
+          "Apropiado para tu grupo de edad",
+          "En promoción"
+        ]
+      },
+      {
+        "product": {
+          "id": "turismo-4297",
+          "nombre": "Pasadía Parque Acuático Lagosol con transporte",
+          "categoria": "Adulto Mayor",
+          "subcategoria": "turismo",
+          "precio_desde": 72500.0,
+          "url": "https://www.tiendacompensar.com/lagosol/pasadia-parque-acuatico-lagosol-con-transporte/HER-B-ALJ-PAS-PLF-001",
+          "imagen_url": "https://www.tiendacompensar.com/ccstore/v1/images/?source=/file/v7878957617927786700/products/pasadia-parque-acuatico-con-transporte-31-07-2025.jpg&height=300&width=300",
+          "promocion": true,
+          "activity_type": "naturaleza"
+        },
+        "score": 80.0,
+        "reasons": [
+          "Actividad de tipo 'naturaleza' es beneficiosa para ruptura_amorosa",
+          "Apropiado para tu grupo de edad",
+          "En promoción"
+        ]
+      },
+      {
+        "product": {
+          "id": "turismo-7873",
+          "nombre": "Entrada Parque Acuático Lagosol",
+          "categoria": "Adulto Mayor",
+          "subcategoria": "turismo",
+          "precio_desde": 26300.0,
+          "url": "https://www.tiendacompensar.com/lagosol/entrada-parque-acuatico-lagosol/HER-B-ALJ-PAS-ENT-001",
+          "imagen_url": "https://www.tiendacompensar.com/ccstore/v1/images/?source=/file/v585083665622379628/general/entrada-parque-acuatico-31-07-2025.jpg&height=300&width=300",
+          "promocion": true,
+          "activity_type": "naturaleza"
+        },
+        "score": 80.0,
+        "reasons": [
+          "Actividad de tipo 'naturaleza' es beneficiosa para ruptura_amorosa",
+          "Apropiado para tu grupo de edad",
+          "En promoción"
+        ]
+      }
+    ],
+    "context": {
+      "profile_name": "Carlos",
+      "profile_age": 19,
+      "situation_type": "ruptura_amorosa",
+      "situation_subtype": "reciente"
+    }
+  },
+  {
+    "case": "Profesional - Estrés laboral",
+    "message": "María, sé que hoy te toca recuperarte del agotamiento profesional. Tu valor no se mide en horas trabajadas. Por eso, combinando tu interés en yoga con algo nuevo, te sugerimos Pasadía Parque Acuático Lagosol sin transporte Un paso hacia manejar el estrés.",
+    "message_length": 255,
+    "recommendations": [
+      {
+        "product": {
+          "id": "turismo-4679",
+          "nombre": "Pasadía Parque Acuático Lagosol sin transporte",
+          "categoria": "Adulto Mayor",
+          "subcategoria": "turismo",
+          "precio_desde": 33800.0,
+          "url": "https://www.tiendacompensar.com/lagosol/pasadia-parque-acuatico-lagosol-sin-transporte/HER-B-ALJ-PAS-PLF-002",
+          "imagen_url": "https://www.tiendacompensar.com/ccstore/v1/images/?source=/file/v3393540332758315767/products/pasadia-parque-acuatico-sin-transporte-31-07-2025.jpg&height=400&width=400",
+          "promocion": true,
+          "activity_type": "naturaleza"
+        },
+        "score": 80.0,
+        "reasons": [
+          "Actividad de tipo 'naturaleza' es beneficiosa para estres_laboral",
+          "Apropiado para tu grupo de edad",
+          "En promoción"
+        ]
+      },
+      {
+        "product": {
+          "id": "turismo-4297",
+          "nombre": "Pasadía Parque Acuático Lagosol con transporte",
+          "categoria": "Adulto Mayor",
+          "subcategoria": "turismo",
+          "precio_desde": 72500.0,
+          "url": "https://www.tiendacompensar.com/lagosol/pasadia-parque-acuatico-lagosol-con-transporte/HER-B-ALJ-PAS-PLF-001",
+          "imagen_url": "https://www.tiendacompensar.com/ccstore/v1/images/?source=/file/v7878957617927786700/products/pasadia-parque-acuatico-con-transporte-31-07-2025.jpg&height=300&width=300",
+          "promocion": true,
+          "activity_type": "naturaleza"
+        },
+        "score": 80.0,
+        "reasons": [
+          "Actividad de tipo 'naturaleza' es beneficiosa para estres_laboral",
+          "Apropiado para tu grupo de edad",
+          "En promoción"
+        ]
+      },
+      {
+        "product": {
+          "id": "turismo-7873",
+          "nombre": "Entrada Parque Acuático Lagosol",
+          "categoria": "Adulto Mayor",
+          "subcategoria": "turismo",
+          "precio_desde": 26300.0,
+          "url": "https://www.tiendacompensar.com/lagosol/entrada-parque-acuatico-lagosol/HER-B-ALJ-PAS-ENT-001",
+          "imagen_url": "https://www.tiendacompensar.com/ccstore/v1/images/?source=/file/v585083665622379628/general/entrada-parque-acuatico-31-07-2025.jpg&height=300&width=300",
+          "promocion": true,
+          "activity_type": "naturaleza"
+        },
+        "score": 80.0,
+        "reasons": [
+          "Actividad de tipo 'naturaleza' es beneficiosa para estres_laboral",
+          "Apropiado para tu grupo de edad",
+          "En promoción"
+        ]
+      }
+    ],
+    "context": {
+      "profile_name": "María",
+      "profile_age": 35,
+      "situation_type": "estres_laboral",
+      "situation_subtype": "burnout"
+    }
+  }
+]
