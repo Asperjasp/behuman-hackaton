@@ -1,0 +1,343 @@
+/**
+ * HR Workflow Module for BeHuman
+ * 
+ * Handles the flow where HR receives anonymous notifications about employee situations
+ * and can approve wellness interventions.
+ * 
+ * Flow:
+ * 1. Voice agent captures employee situation (anonymous)
+ * 2. System generates HR cards with recommended interventions
+ * 3. HR reviews and accepts/rejects cards
+ * 4. If accepted, employee receives anonymous notification with intervention details
+ */
+
+import type {
+  Profile,
+  Situation,
+  Product,
+  ScoredProduct,
+  HRCard,
+  EmployeeNotification,
+  RecommendationResult,
+} from './types';
+import { getRecommendations } from './recommender';
+
+/**
+ * Estimate productivity uplift percentage based on product score
+ * Uses a heuristic that maps recommendation scores to expected productivity gains
+ * 
+ * @param score - The recommendation score (higher = better match)
+ * @param productId - Product identifier for stable jitter
+ * @returns Estimated productivity uplift as percentage (3-30%)
+ */
+function estimateProductivityUplift(score: number, productId: string): number {
+  // Normalize score roughly (scores are multiples of 30/15/10 etc.)
+  const norm = Math.min(Math.max(score / 100.0, 0.03), 0.3);
+  
+  // Add small stable jitter based on product ID hash
+  const hash = productId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const jitter = (hash % 5) / 100.0;
+  
+  const uplift = Math.min(0.30, norm + jitter);
+  return Math.round(uplift * 1000) / 10; // Round to 1 decimal place as percentage
+}
+
+/**
+ * Generate explanation text for an HR card
+ * 
+ * @param reasons - List of reasons why this product was recommended
+ * @param category - Product category
+ * @returns Explanation string for HR
+ */
+function generateExplanation(reasons: string[], category: string): string {
+  const primaryReason = reasons[0] || `encaja con la situación actual`;
+  
+  return (
+    `Esta opción ayuda porque ${primaryReason}. ` +
+    `Las actividades de ${category.toLowerCase()} favorecen el bienestar ` +
+    `y pueden reducir ausentismo y mejorar la productividad.`
+  );
+}
+
+/**
+ * Create HR cards from recommendation results
+ * 
+ * Each card contains:
+ * - Product information
+ * - Explanation of why it's recommended
+ * - Estimated productivity uplift
+ * 
+ * @param profile - User profile (anonymous)
+ * @param situation - Detected situation from voice transcript
+ * @param recommendations - Scored products from recommender
+ * @param maxCards - Maximum number of cards to generate (default: 2)
+ * @returns Array of HR cards ready for review
+ */
+export function createHRCards(
+  profile: Profile,
+  situation: Situation,
+  recommendations: ScoredProduct[],
+  maxCards: number = 2
+): HRCard[] {
+  const cards: HRCard[] = [];
+  const usedProducts = new Set<string>();
+
+  for (const rec of recommendations) {
+    const productId = rec.product.id;
+    
+    // Skip if we've already added this product
+    if (usedProducts.has(productId)) {
+      continue;
+    }
+    usedProducts.add(productId);
+
+    const uplift = estimateProductivityUplift(rec.score, productId);
+
+    const card: HRCard = {
+      id: `hr-card-${Date.now()}-${productId}`,
+      product: rec.product,
+      title: rec.product.nombre,
+      subtitle: `${rec.product.categoria_principal} · ${rec.product.subcategoria}`,
+      explanation: generateExplanation(rec.reasons, rec.product.categoria_principal),
+      estimatedProductivityUpliftPercent: uplift,
+      score: rec.score,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+
+    cards.push(card);
+
+    if (cards.length >= maxCards) {
+      break;
+    }
+  }
+
+  return cards;
+}
+
+/**
+ * Generate the full HR workflow output including cards and empathic message
+ * 
+ * This is the main entry point that combines the recommender with HR card generation
+ * 
+ * @param profile - Anonymous user profile
+ * @param situation - Detected situation
+ * @param transcript - Original voice transcript
+ * @returns Full recommendation result with HR cards
+ */
+export async function generateHRWorkflow(
+  profile: Profile,
+  situation: Situation,
+  transcript: string
+): Promise<RecommendationResult> {
+  // Get recommendations from the recommender
+  const result = await getRecommendations(profile, situation, transcript, 4);
+  
+  // Generate HR cards from top recommendations
+  const hrCards = createHRCards(profile, situation, result.recommendations, 2);
+  
+  return {
+    ...result,
+    hrCards,
+  };
+}
+
+/**
+ * Process HR acceptance of a card and generate employee notification
+ * 
+ * When HR accepts a card:
+ * 1. Update card status
+ * 2. Generate anonymous employee notification
+ * 3. Include intervention details without revealing identity
+ * 
+ * @param profile - User profile (for generating personalized message)
+ * @param situation - Situation context
+ * @param acceptedCard - The HR card that was accepted
+ * @param empathicMessage - The empathic message generated by the recommender
+ * @returns Employee notification object
+ */
+export function hrAccept(
+  profile: Profile,
+  situation: Situation,
+  acceptedCard: HRCard,
+  empathicMessage: string
+): EmployeeNotification {
+  const product = acceptedCard.product;
+  
+  // Build the anonymous notification for the employee
+  const notification: EmployeeNotification = {
+    id: `notif-${Date.now()}`,
+    anonymous: true,
+    message: buildEmployeeMessage(empathicMessage, product.nombre),
+    intervention: {
+      title: product.nombre,
+      description: product.descripcion,
+      url: product.url,
+      category: product.categoria_principal,
+      subcategory: product.subcategoria,
+      price: product.precio_desde,
+      estimatedProductivityUpliftPercent: acceptedCard.estimatedProductivityUpliftPercent,
+    },
+    createdAt: new Date().toISOString(),
+    acceptedCardId: acceptedCard.id,
+  };
+
+  return notification;
+}
+
+/**
+ * Build the employee-facing message
+ * 
+ * Combines the empathic message with information about the intervention
+ * while maintaining anonymity
+ * 
+ * @param empathicMessage - The personalized empathic message
+ * @param interventionTitle - Name of the recommended intervention
+ * @returns Complete employee message
+ */
+function buildEmployeeMessage(empathicMessage: string, interventionTitle: string): string {
+  return (
+    `${empathicMessage}\n\n` +
+    `RRHH ha aprobado una intervención que podría ayudarte: "${interventionTitle}". ` +
+    `Si deseas más detalles o tienes alguna pregunta, ` +
+    `puedes responder a este mensaje y te conectaremos con el equipo de bienestar. ` +
+    `Tu identidad sigue siendo confidencial.`
+  );
+}
+
+/**
+ * Mark an HR card as rejected
+ * 
+ * @param card - The card to reject
+ * @param reason - Optional reason for rejection
+ * @returns Updated card with rejected status
+ */
+export function hrReject(card: HRCard, reason?: string): HRCard {
+  return {
+    ...card,
+    status: 'rejected',
+    rejectionReason: reason,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Full end-to-end workflow simulation
+ * 
+ * Useful for testing the complete flow:
+ * 1. Generate recommendations and HR cards
+ * 2. Simulate HR acceptance of first card
+ * 3. Generate employee notification
+ * 
+ * @param profile - User profile
+ * @param transcript - Voice transcript
+ * @returns Object with workflow results
+ */
+export async function runFullWorkflow(
+  profile: Profile,
+  transcript: string
+): Promise<{
+  situation: Situation;
+  recommendations: ScoredProduct[];
+  hrCards: HRCard[];
+  empathicMessage: string;
+  employeeNotification: EmployeeNotification | null;
+}> {
+  // Import situation classification
+  const { classifySituation } = await import('./recommender');
+  
+  // Classify situation from transcript
+  const situation = classifySituation(transcript);
+  
+  // Generate HR workflow
+  const result = await generateHRWorkflow(profile, situation, transcript);
+  
+  // Simulate HR accepting the first card
+  let employeeNotification: EmployeeNotification | null = null;
+  if (result.hrCards && result.hrCards.length > 0) {
+    const acceptedCard = {
+      ...result.hrCards[0],
+      status: 'accepted' as const,
+    };
+    employeeNotification = hrAccept(
+      profile,
+      situation,
+      acceptedCard,
+      result.empathicMessage
+    );
+  }
+
+  return {
+    situation,
+    recommendations: result.recommendations,
+    hrCards: result.hrCards || [],
+    empathicMessage: result.empathicMessage,
+    employeeNotification,
+  };
+}
+
+// =============================================================================
+// DEMO / EXAMPLE USAGE
+// =============================================================================
+
+/**
+ * Demo function showing the complete HR workflow
+ * Can be run directly: npx ts-node hrWorkflow.ts
+ */
+export async function demo() {
+  console.log('=== BeHuman HR Workflow Demo ===\n');
+
+  const profile: Profile = {
+    userId: 'anon-123',
+    name: 'Empleado Anónimo',
+    age: 34,
+    gender: 'no-binario',
+    hobbies: ['yoga', 'lectura', 'música'],
+    goals: ['recuperar equilibrio', 'manejar estrés'],
+  };
+
+  const transcript = `
+    Últimamente me siento muy abrumado con el trabajo. 
+    Las fechas límite se acumulan y no tengo tiempo para nada más. 
+    Antes hacía yoga pero hace meses que no practico.
+    Me cuesta dormir pensando en todo lo que tengo pendiente.
+  `;
+
+  console.log('📋 Profile:', profile.name);
+  console.log('🎙️ Transcript excerpt:', transcript.slice(0, 100) + '...\n');
+
+  try {
+    const result = await runFullWorkflow(profile, transcript);
+
+    console.log('🔍 Detected Situation:', result.situation.type);
+    console.log('   Context:', result.situation.context);
+    console.log('');
+
+    console.log('💬 Empathic Message:');
+    console.log(`   "${result.empathicMessage}"`);
+    console.log('');
+
+    console.log('📊 HR Cards Generated:', result.hrCards.length);
+    for (const card of result.hrCards) {
+      console.log(`\n   Card: ${card.title}`);
+      console.log(`   Category: ${card.subtitle}`);
+      console.log(`   Productivity Uplift: +${card.estimatedProductivityUpliftPercent}%`);
+      console.log(`   Explanation: ${card.explanation}`);
+    }
+
+    if (result.employeeNotification) {
+      console.log('\n📧 Employee Notification (after HR approval):');
+      console.log(`   Anonymous: ${result.employeeNotification.anonymous}`);
+      console.log(`   Intervention: ${result.employeeNotification.intervention.title}`);
+      console.log(`   Message preview: ${result.employeeNotification.message.slice(0, 150)}...`);
+    }
+
+  } catch (error) {
+    console.error('Error running workflow:', error);
+  }
+}
+
+// Run demo if this file is executed directly
+if (typeof require !== 'undefined' && require.main === module) {
+  demo();
+}
