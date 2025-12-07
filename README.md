@@ -710,123 +710,201 @@ DATABASE_CONNECTION_STRING=your_connection_string
 
 ---
 
-## 🛒 Scraper de Tienda Compensar
+## 🛒 Scraper de Tienda Compensar + Integración Supabase
 
-Sistema de web scraping para extraer productos y servicios de [Tienda Compensar](https://www.tiendacompensar.com), estructurado en base de datos SQLite.
+Sistema de web scraping para extraer productos y servicios de [Tienda Compensar](https://www.tiendacompensar.com) y sincronizarlos con la base de datos Supabase para el sistema de recomendaciones.
+
+### 📊 Flujo de Datos Completo
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PASO 1: SCRAPING                                                       │
+│  python src/scraper/run_playwright_scraper.py                           │
+│                                                                         │
+│  • Usa Playwright (navegador Chromium headless)                         │
+│  • Extrae precios A/B/C/No afiliado con hover simulation                │
+│  • Guarda en data/compensar/productos.json                              │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PASO 2: SUPABASE SYNC                                                  │
+│  python src/scraper/supabase_sync.py                                    │
+│                                                                         │
+│  • Convierte productos al formato activity_catalog                      │
+│  • Agrega TAGS automáticos para recomendaciones:                        │
+│    - profile_tags: ["activo", "social", "creativo", ...]               │
+│    - situation_tags: ["estrés alto", "ansiedad", "ánimo bajo", ...]    │
+│  • Sube a Supabase                                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  SUPABASE: activity_catalog                                             │
+│                                                                         │
+│  Campos principales:                                                    │
+│  • activity_title: "Pasadía Lagosol"                                   │
+│  • category: "recreación" | "deporte" | "cultura" | "bienestar"        │
+│  • price: { tipo_a: 33800, tipo_b: 34500, tipo_c: 44400 }             │
+│  • profile_tags: ["social", "aventurero"]                              │
+│  • situation_tags: ["ánimo bajo", "aislamiento social"]                │
+│  • age_group: "adultos" | "niños" | "tercera edad" | "familiar"        │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ### 📂 Estructura del Scraper
 
 ```
 src/scraper/
-├── __init__.py                 # Exports del módulo
-├── compensar_scraper.py        # Scraper con Requests + BeautifulSoup
-├── selenium_scraper.py         # Scraper con Selenium (contenido JS)
-├── database.py                 # Base de datos SQLite
-└── run_scraper.py              # Script principal de ejecución
+├── compensar_playwright_scraper.py  # ⭐ Scraper principal (Playwright + hover)
+├── run_playwright_scraper.py        # CLI para ejecutar scraping
+├── supabase_sync.py                 # ⭐ Sincronización con Supabase + Tags
+├── database.py                      # Base de datos SQLite local
+├── compensar_selenium_scraper.py    # (Legacy) Intento con Selenium
+├── compensar_vtex_scraper.py        # (Legacy) Investigación API
+├── investigate_api.py               # (Debug) Investigación endpoints
+└── investigate_prices.py            # (Debug) Investigación hover
 ```
 
 ### 🔧 Instalación
 
 ```bash
-# Activar entorno virtual
+# 1. Activar entorno virtual
 source Behuman-Hackaton/bin/activate
 
-# Instalar dependencias
+# 2. Instalar dependencias
 pip install -r requirements.txt
+
+# 3. Instalar navegador para Playwright
+playwright install chromium
+
+# 4. Configurar Supabase (copiar y editar)
+cp .env.example .env
+# Editar .env con las credenciales de Supabase
 ```
 
-### 🚀 Uso del Scraper
-
-#### Descubrir categorías disponibles
+### 🚀 Uso: Scraping Completo
 
 ```bash
-python -m src.scraper.run_scraper --discover
+# Scrapear TODAS las categorías (23 subcategorías)
+python src/scraper/run_playwright_scraper.py
+
+# Scrapear categorías específicas
+python src/scraper/run_playwright_scraper.py --categoria turismo gimnasio spa
+
+# Ver el navegador mientras scrapea (debug)
+python src/scraper/run_playwright_scraper.py --show-browser
+
+# Modo demo (solo 3 categorías)
+python src/scraper/run_playwright_scraper.py --demo
 ```
 
-#### Scrapear todas las categorías
+### 🔄 Uso: Sincronizar con Supabase
 
 ```bash
-python -m src.scraper.run_scraper
+# Ver qué se subiría (sin subir)
+python src/scraper/supabase_sync.py --dry-run
+
+# Subir productos a Supabase
+python src/scraper/supabase_sync.py
+
+# Buscar actividades por tags (para probar)
+python src/scraper/supabase_sync.py --search "estrés alto" "ansiedad"
 ```
 
-#### Scrapear categorías específicas
+### 🏷️ Sistema de Tags Automáticos
 
-```bash
-python -m src.scraper.run_scraper --categories turismo spa gimnasio
+El módulo `supabase_sync.py` asigna tags automáticamente según la subcategoría:
+
+| Subcategoría | profile_tags | situation_tags |
+|--------------|--------------|----------------|
+| gimnasio | activo, disciplinado, competitivo | estrés alto, ansiedad, baja autoestima |
+| turismo | social, aventurero, curioso | ánimo bajo, aislamiento social, agotamiento |
+| sistemas | tecnológico, analítico, autodidacta | estancamiento profesional, baja autoestima |
+| spa | tranquilo, autocuidado, relajado | estrés alto, ansiedad, agotamiento |
+| musica | creativo, expresivo, artístico | ánimo bajo, estrés alto, necesidad de expresión |
+
+### 🎯 Ejemplo de Recomendación
+
+**Usuario**: Adolescente 19 años, problemas de confianza, le gusta el deporte
+
+**Perfil detectado**:
+```json
+{
+  "age_group": "adultos",
+  "profile_tags": ["activo"],
+  "situation_tags": ["baja autoestima"]
+}
 ```
 
-#### Usar Selenium (para contenido renderizado con JavaScript)
-
-```bash
-python -m src.scraper.run_scraper --use-selenium
-```
-
-#### Exportar a JSON
-
-```bash
-python -m src.scraper.run_scraper --export-json data/compensar/productos.json
-```
-
-### 📊 Categorías Disponibles
-
-Basado en el menú de navegación de Tienda Compensar:
-
-| Público Objetivo | Subcategorías |
-|-----------------|---------------|
-| **Adulto Mayor** | Turismo, Spa, Gimnasio, Música, Natación, Cursos, Prácticas, Biblioteca |
-| **Adultos** | Vacaciones recreativas, Bienestar, Eventos, Actividades culturales |
-| **Adolescentes** | Cursos, Deportes, Actividades recreativas |
-| **Niños** | Vacaciones, Cursos, Actividades |
-| **Bebés** | Estimulación, Natación |
-| **Embarazadas** | Preparación, Bienestar |
-
-### 🗃️ Base de Datos
-
-Los datos se almacenan en SQLite en `data/compensar/compensar.db`:
-
+**Consulta SQL en Supabase**:
 ```sql
--- Tablas principales
-categories (id, slug, name, description, parent_category)
-products (id, category_id, name, description, price, price_numeric, image_url, product_url)
-scraping_logs (id, category_slug, products_found, success, scraped_at)
+SELECT * FROM activity_catalog
+WHERE situation_tags && ARRAY['baja autoestima']
+  AND profile_tags && ARRAY['activo']
+  AND age_group IN ('adultos', 'familiar')
+ORDER BY relevance_score DESC;
 ```
 
-#### Ejemplo de consulta
+**Resultado**: Gimnasio, Natación, Prácticas dirigidas
+
+### 📊 Subcategorías Disponibles (23 total)
+
+| Categoría | Subcategorías |
+|-----------|---------------|
+| **Deporte** | gimnasio, natacion-y-buceo, practicas-dirigidas, practicas-libres |
+| **Cultura** | musica, actividades-culturales, manualidades, cocina, biblioteca |
+| **Bienestar** | spa, bienestar-y-armonia, salud-para-adulto-mayor |
+| **Recreación** | turismo, pasadias, planes, cine-y-entretenimiento, bolos |
+| **Educación** | cursos, sistemas, clases-personalizadas |
+
+### 🗃️ Base de Datos Local (SQLite)
+
+Además de Supabase, los datos se guardan localmente en `data/compensar/compensar.db`:
 
 ```python
-from src.scraper.database import CompensarDatabase
+import sqlite3
 
-with CompensarDatabase() as db:
-    # Obtener productos de turismo
-    turismo = db.get_products_by_category("turismo")
-    
-    # Buscar por precio
-    ofertas = db.search_products("san andres", max_price=500000)
-    
-    # Estadísticas
-    stats = db.get_statistics()
-    print(f"Total productos: {stats['total_products']}")
+conn = sqlite3.connect('data/compensar/compensar.db')
+cursor = conn.cursor()
+
+# Ver productos de turismo
+cursor.execute('''
+    SELECT nombre, precio_categoria_a, precio_categoria_b 
+    FROM productos 
+    WHERE subcategoria = 'turismo'
+''')
+for row in cursor.fetchall():
+    print(row)
+```
+
+### 🔑 Variables de Entorno (.env)
+
+```bash
+# Supabase (obtener de tu compañero)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-key-here
+
+# OpenAI (para embeddings - futuro)
+# OPENAI_API_KEY=your-key-here
 ```
 
 ### 📦 Dependencias del Scraper
 
 ```txt
 # Web Scraping
-requests>=2.31.0
-beautifulsoup4>=4.12.0
-lxml>=4.9.0
+playwright>=1.40.0        # Navegador headless
+beautifulsoup4>=4.12.0    # Parsing HTML
+lxml>=4.9.0               # Parser rápido
 
 # Database
-sqlite3 (built-in)
-
-# Selenium (opcional, para JS)
-selenium>=4.15.0
-webdriver-manager>=4.0.0
+supabase>=2.0.0           # Cliente Supabase
+python-dotenv>=1.0.0      # Variables de entorno
 
 # Utilities
-tqdm>=4.66.0
-tenacity>=8.2.0
+tqdm>=4.66.0              # Progress bars
 ```
+
 
 ---
 
